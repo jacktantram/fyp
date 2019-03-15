@@ -1,0 +1,69 @@
+version: "3"
+services:
+  web:
+    build: recommendation_web_app/
+    ports:
+    - "5003:5003"
+    volumes:
+      - ./recommendation_web_app:/app
+    links: 
+      - api_gateway
+    restart: on-failure
+    environment: 
+        - COMPOSE_DEV=1
+
+  api_gateway:
+    build: api_gateway/
+    ports:
+    - "5000:5000"
+    links:
+    - redis
+    - recommendation_engine
+    restart: on-failure
+    volumes:
+      - ./api_gateway:/app
+    environment: 
+        - COMPOSE_DEV=1
+
+  recommendation_engine: 
+    build: recommendation_engine/ 
+    ports: 
+    - "5002:5002" 
+    links:
+    -  neo4j
+    restart: on-failure
+    volumes:
+      - ./recommendation_engine:/app
+    environment: 
+        - COMPOSE_DEV=1
+
+  search_service: 
+    build: search_service/ 
+    ports: 
+    - "5004:5004" 
+    links:
+    -  neo4j
+    restart: on-failure
+    volumes:
+      - ./search_service:/app
+    environment: 
+        - COMPOSE_DEV=1
+
+  redis:
+    image: redis
+    ports:
+    - "6379:6379"
+    entrypoint: redis-server --requirepass foobared --appendonly yes 
+    restart: on-failure
+
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: on-failure
+    volumes:
+    - ./database/db/dbms:/data/dbms
+    environment:
+      NEO4J_AUTH: "neo4j/password"
+  
